@@ -1,19 +1,19 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
-import { useAuth } from "../contexts/AuthContext"
-import { Sparkles, Clock, AlertCircle, Volume2, VolumeX } from "lucide-react"
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { Sparkles, Clock, AlertCircle, Volume2, VolumeX } from "lucide-react";
 
 // Replace the mock generateContent function with the actual API call
 const generateContent = async (topic, ageRange, storyType) => {
   try {
-    console.log('Sending request to backend:', { topic, ageRange, storyType });
-    
-    const response = await fetch('http://localhost:5001/api/generate-content', {
-      method: 'POST',
+    console.log("Sending request to backend:", { topic, ageRange, storyType });
+
+    const response = await fetch("http://localhost:5001/api/generate-content", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         contentType: storyType,
@@ -23,14 +23,14 @@ const generateContent = async (topic, ageRange, storyType) => {
     });
 
     const data = await response.json();
-    console.log('Backend response:', data);
+    console.log("Backend response:", data);
 
     if (!response.ok) {
-      throw new Error(data.error || 'Failed to generate content');
+      throw new Error(data.error || "Failed to generate content");
     }
-    
+
     if (!data.success) {
-      throw new Error(data.error || 'Failed to generate content');
+      throw new Error(data.error || "Failed to generate content");
     }
 
     const content = {
@@ -46,84 +46,122 @@ const generateContent = async (topic, ageRange, storyType) => {
     // Save to history in localStorage
     const history = JSON.parse(localStorage.getItem("contentHistory") || "[]");
     history.unshift(content);
-    localStorage.setItem("contentHistory", JSON.stringify(history.slice(0, 10))); // Keep only last 10 items
+    localStorage.setItem(
+      "contentHistory",
+      JSON.stringify(history.slice(0, 10))
+    ); // Keep only last 10 items
 
     return content;
   } catch (error) {
-    console.error('Error generating content:', error);
-    throw new Error(error.message || 'Failed to generate content. Please try again.');
+    console.error("Error generating content:", error);
+    throw new Error(
+      error.message || "Failed to generate content. Please try again."
+    );
   }
 };
 
 export default function Dashboard() {
-  const { currentUser } = useAuth()
-  const navigate = useNavigate()
-  const [isSpeaking, setIsSpeaking] = useState(false)
-  const [speechSynthesis, setSpeechSynthesis] = useState(null)
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speechSynthesis, setSpeechSynthesis] = useState(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setSpeechSynthesis(window.speechSynthesis)
+    if (typeof window !== "undefined") {
+      setSpeechSynthesis(window.speechSynthesis);
     }
-  }, [])
+  }, []);
 
-  const [topic, setTopic] = useState("")
-  const [ageRange, setAgeRange] = useState("6-8")
-  const [storyType, setStoryType] = useState("educational")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [generatedContent, setGeneratedContent] = useState(null)
+  const [topic, setTopic] = useState("");
+  const [ageRange, setAgeRange] = useState("6-8");
+  const [storyType, setStoryType] = useState("educational");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState(null);
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!topic.trim()) {
-      return setError("Please enter a topic")
+      return setError("Please enter a topic");
     }
 
-    setError("")
-    setLoading(true)
+    setError("");
+    setLoading(true);
 
     try {
-      const content = await generateContent(topic, ageRange, storyType)
-      setGeneratedContent(content)
+      const content = await generateContent(topic, ageRange, storyType);
+      setGeneratedContent(content);
     } catch (err) {
-      setError("Failed to generate content. Please try again.")
-      console.error(err)
+      setError("Failed to generate content. Please try again.");
+      console.error(err);
     }
 
-    setLoading(false)
-  }
+    setLoading(false);
+  };
 
   const handleNewContent = () => {
     if (speechSynthesis) {
-      speechSynthesis.cancel()
+      speechSynthesis.cancel();
     }
-    setIsSpeaking(false)
-    setGeneratedContent(null)
-    setTopic("")
-  }
+    setIsSpeaking(false);
+    setGeneratedContent(null);
+    setTopic("");
+  };
 
   const handleTextToSpeech = () => {
-    if (!speechSynthesis || !generatedContent) return
+    if (!speechSynthesis || !generatedContent) return;
 
     if (isSpeaking) {
-      speechSynthesis.cancel()
-      setIsSpeaking(false)
+      speechSynthesis.cancel();
+      setIsSpeaking(false);
     } else {
-      const utterance = new SpeechSynthesisUtterance(generatedContent.content)
-      utterance.onend = () => setIsSpeaking(false)
-      utterance.onerror = () => setIsSpeaking(false)
-      speechSynthesis.speak(utterance)
-      setIsSpeaking(true)
+      // const utterance = new SpeechSynthesisUtterance(generatedContent.content)
+      // utterance.onend = () => setIsSpeaking(false)
+      // utterance.onerror = () => setIsSpeaking(false)
+      // speechSynthesis.speak(utterance)
+      // setIsSpeaking(true)
+      const utterance = new SpeechSynthesisUtterance(generatedContent.content);
+
+      // Retrieve the list of available voices
+      const voices = speechSynthesis.getVoices();
+      console.log("Available voices:", voices);
+      // Select a voice suitable for storytelling
+      // const storytellingVoice = voices.find(
+      //   (voice) =>
+      //     voice.name.includes("Narrator") || voice.name.includes("Storyteller")
+      // );
+
+      // Assign the selected voice to the utterance
+      if (voices.length > 0) {
+        utterance.voice = voices[2];
+      } else {
+        console.warn(
+          "Suitable storytelling voice not found. Using default voice."
+        );
+      }
+
+      // Set pitch and rate for storytelling tone
+      utterance.pitch = 1.0; // Normal pitch
+      utterance.rate = 0.9; // Slightly slower rate for clear narration
+
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+
+      speechSynthesis.speak(utterance);
+      setIsSpeaking(true);
     }
-  }
+  };
 
   return (
     <div className="max-w-7xl mx-auto">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Welcome, {currentUser.name}!</h1>
-        <p className="text-gray-600 mt-2">Generate interactive learning content on any topic</p>
+        <h1 className="text-3xl font-bold text-gray-800">
+          Welcome, {currentUser.name}!
+        </h1>
+        <p className="text-gray-600 mt-2">
+          Generate interactive learning content on any topic
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -133,7 +171,9 @@ export default function Dashboard() {
             <div className="bg-purple-100 p-2 rounded-full">
               <Sparkles className="h-6 w-6 text-purple-600" />
             </div>
-            <h2 className="text-xl font-semibold ml-3">Create New Learning Content</h2>
+            <h2 className="text-xl font-semibold ml-3">
+              Create New Learning Content
+            </h2>
           </div>
 
           {error && (
@@ -145,7 +185,10 @@ export default function Dashboard() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="topic" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="topic"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 What topic would you like to learn about?
               </label>
               <input
@@ -160,7 +203,10 @@ export default function Dashboard() {
             </div>
 
             <div>
-              <label htmlFor="ageRange" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="ageRange"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Age Range
               </label>
               <select
@@ -178,7 +224,10 @@ export default function Dashboard() {
             </div>
 
             <div>
-              <label htmlFor="storyType" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="storyType"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Content Type
               </label>
               <select
@@ -238,14 +287,20 @@ export default function Dashboard() {
           {generatedContent ? (
             <div className="p-6 md:p-8">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">{generatedContent.title}</h2>
+                <h2 className="text-2xl font-bold text-gray-800">
+                  {generatedContent.title}
+                </h2>
                 <div className="flex items-center space-x-4">
                   <button
                     onClick={handleTextToSpeech}
                     className="text-purple-600 hover:text-purple-800 p-2 rounded-full hover:bg-purple-50"
                     title={isSpeaking ? "Stop Reading" : "Read Aloud"}
                   >
-                    {isSpeaking ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                    {isSpeaking ? (
+                      <VolumeX className="h-5 w-5" />
+                    ) : (
+                      <Volume2 className="h-5 w-5" />
+                    )}
                   </button>
                   <button
                     onClick={handleNewContent}
@@ -270,17 +325,22 @@ export default function Dashboard() {
               </div>
 
               <div className="prose max-w-none">
-                {generatedContent.content.split("\n\n").map((paragraph, index) => (
-                  <p key={index} className="mb-4">
-                    {paragraph}
-                  </p>
-                ))}
+                {generatedContent.content
+                  .split("\n\n")
+                  .map((paragraph, index) => (
+                    <p key={index} className="mb-4">
+                      {paragraph}
+                    </p>
+                  ))}
               </div>
 
               <div className="mt-8 pt-4 border-t border-gray-200 flex justify-between items-center">
                 <div className="flex items-center text-sm text-gray-500">
                   <Clock className="h-4 w-4 mr-1" />
-                  <span>Generated on {new Date(generatedContent.createdAt).toLocaleDateString()}</span>
+                  <span>
+                    Generated on{" "}
+                    {new Date(generatedContent.createdAt).toLocaleDateString()}
+                  </span>
                 </div>
 
                 <button
@@ -294,12 +354,16 @@ export default function Dashboard() {
           ) : (
             <div className="p-8 text-center">
               <Sparkles className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900">No content generated yet</h3>
-              <p className="mt-2 text-sm text-gray-500">Fill out the form to generate your first learning content</p>
+              <h3 className="text-lg font-medium text-gray-900">
+                No content generated yet
+              </h3>
+              <p className="mt-2 text-sm text-gray-500">
+                Fill out the form to generate your first learning content
+              </p>
             </div>
           )}
         </div>
       </div>
     </div>
-  )
+  );
 }
