@@ -78,6 +78,7 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState(null);
+  const [voiceType, setVoiceType] = useState(10);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -134,7 +135,7 @@ export default function Dashboard() {
 
       // Assign the selected voice to the utterance
       if (voices.length > 0) {
-        utterance.voice = voices[2];
+        utterance.voice = voices[10];
       } else {
         console.warn(
           "Suitable storytelling voice not found. Using default voice."
@@ -286,7 +287,7 @@ export default function Dashboard() {
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
           {generatedContent ? (
             <div className="p-6 md:p-8">
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex justify-between items-center mb-5">
                 <h2 className="text-2xl font-bold text-gray-800">
                   {generatedContent.title}
                 </h2>
@@ -311,7 +312,23 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
-
+              <div>
+                <label
+                  htmlFor="selectVoice"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Select Voice
+                </label>
+                <select
+                  id="storyType"
+                  value={voiceType}
+                  onChange={(e) => setVoiceType(e.target.value)}
+                  className="block w-full px-3 py-2 mb-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                >
+                  <option value="10">Female</option>
+                  <option value="4">Male</option>
+                </select>
+              </div>
               <div className="flex flex-wrap gap-2 mb-4">
                 <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
                   {generatedContent.topic}
