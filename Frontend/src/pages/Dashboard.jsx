@@ -134,7 +134,7 @@ export default function Dashboard() {
 
       // Assign the selected voice to the utterance
       if (voices.length > 0) {
-        utterance.voice = voices[2];
+        utterance.voice = voices[10];
       } else {
         console.warn(
           "Suitable storytelling voice not found. Using default voice."
