@@ -10,17 +10,20 @@ const generateContent = async (topic, ageRange, storyType) => {
   try {
     console.log("Sending request to backend:", { topic, ageRange, storyType });
 
-    const response = await fetch("http://localhost:5001/api/generate-content", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contentType: storyType,
-        topic,
-        ageRange,
-      }),
-    });
+    const response = await fetch(
+      "http://localhost:5001/test/generate-content", //"http://localhost:5001/api/generate-content" --> "http://localhost:5001/test/generate-content"
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contentType: storyType,
+          topic,
+          ageRange,
+        }),
+      }
+    );
 
     const data = await response.json();
     console.log("Backend response:", data);
@@ -80,6 +83,9 @@ export default function Dashboard() {
   const [generatedContent, setGeneratedContent] = useState(null);
   const [voiceType, setVoiceType] = useState(10);
 
+  // useEffect(() => {
+  //   handleTextToSpeech();
+  // }, [voiceType]);
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -135,7 +141,7 @@ export default function Dashboard() {
 
       // Assign the selected voice to the utterance
       if (voices.length > 0) {
-        utterance.voice = voices[10];
+        utterance.voice = voices[voiceType];
       } else {
         console.warn(
           "Suitable storytelling voice not found. Using default voice."
@@ -322,7 +328,9 @@ export default function Dashboard() {
                 <select
                   id="storyType"
                   value={voiceType}
-                  onChange={(e) => setVoiceType(e.target.value)}
+                  onChange={(e) => {
+                    setVoiceType(e.target.value);
+                  }}
                   className="block w-full px-3 py-2 mb-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
                 >
                   <option value="10">Female</option>
