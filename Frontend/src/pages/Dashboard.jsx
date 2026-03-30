@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -11,7 +9,7 @@ const generateContent = async (topic, ageRange, storyType) => {
     console.log("Sending request to backend:", { topic, ageRange, storyType });
 
     const response = await fetch(
-      "http://localhost:5001/test/generate-content", //"http://localhost:5001/api/generate-content" --> "http://localhost:5001/test/generate-content"
+      "http://localhost:5001/api/generate-content",
       {
         method: "POST",
         headers: {
@@ -68,10 +66,35 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speechSynthesis, setSpeechSynthesis] = useState(null);
+  const [voices, setVoices] = useState([]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       setSpeechSynthesis(window.speechSynthesis);
+      
+      // Load voices and handle the onvoiceschanged event
+      const loadVoices = () => {
+        const availableVoices = window.speechSynthesis.getVoices();
+        if (availableVoices.length > 0) {
+          setVoices(availableVoices);
+          // Set default voice to first available
+          if (voiceType >= availableVoices.length) {
+            setVoiceType(0);
+          }
+        }
+      };
+      
+      // Load voices immediately
+      loadVoices();
+      
+      // Also listen for voices change event (some browsers load voices asynchronously)
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+      
+      return () => {
+        if (window.speechSynthesis) {
+          window.speechSynthesis.onvoiceschanged = null;
+        }
+      };
     }
   }, []);
 
@@ -81,7 +104,7 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState(null);
-  const [voiceType, setVoiceType] = useState(10);
+  const [voiceType, setVoiceType] = useState(0);
 
   // useEffect(() => {
   //   handleTextToSpeech();
@@ -123,29 +146,18 @@ export default function Dashboard() {
       speechSynthesis.cancel();
       setIsSpeaking(false);
     } else {
-      // const utterance = new SpeechSynthesisUtterance(generatedContent.content)
-      // utterance.onend = () => setIsSpeaking(false)
-      // utterance.onerror = () => setIsSpeaking(false)
-      // speechSynthesis.speak(utterance)
-      // setIsSpeaking(true)
       const utterance = new SpeechSynthesisUtterance(generatedContent.content);
 
-      // Retrieve the list of available voices
-      const voices = speechSynthesis.getVoices();
-      console.log("Available voices:", voices);
-      // Select a voice suitable for storytelling
-      // const storytellingVoice = voices.find(
-      //   (voice) =>
-      //     voice.name.includes("Narrator") || voice.name.includes("Storyteller")
-      // );
-
-      // Assign the selected voice to the utterance
-      if (voices.length > 0) {
+      // Use the selected voice safely
+      if (voices.length > 0 && voiceType < voices.length) {
         utterance.voice = voices[voiceType];
+        console.log(`Using voice: ${voices[voiceType].name}`);
+      } else if (voices.length > 0) {
+        // Fallback to first voice if selected index is out of range
+        utterance.voice = voices[0];
+        console.warn(`Voice index ${voiceType} out of range. Using default voice: ${voices[0].name}`);
       } else {
-        console.warn(
-          "Suitable storytelling voice not found. Using default voice."
-        );
+        console.warn("No voices available. Using browser default.");
       }
 
       // Set pitch and rate for storytelling tone
@@ -153,10 +165,18 @@ export default function Dashboard() {
       utterance.rate = 0.9; // Slightly slower rate for clear narration
 
       utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
+      utterance.onerror = (event) => {
+        console.error("Speech synthesis error:", event);
+        setIsSpeaking(false);
+      };
 
-      speechSynthesis.speak(utterance);
-      setIsSpeaking(true);
+      try {
+        speechSynthesis.speak(utterance);
+        setIsSpeaking(true);
+      } catch (error) {
+        console.error("Error starting speech synthesis:", error);
+        setIsSpeaking(false);
+      }
     }
   };
 
@@ -326,15 +346,22 @@ export default function Dashboard() {
                   Select Voice
                 </label>
                 <select
-                  id="storyType"
-                  value={voiceType}
+                  id="selectVoice"
+                  value={voiceType.toString()}
                   onChange={(e) => {
-                    setVoiceType(e.target.value);
+                    setVoiceType(parseInt(e.target.value));
                   }}
                   className="block w-full px-3 py-2 mb-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
                 >
-                  <option value="10">Female</option>
-                  <option value="4">Male</option>
+                  {voices.length > 0 ? (
+                    voices.map((voice, index) => (
+                      <option key={index} value={index}>
+                        {voice.name} {voice.lang ? `(${voice.lang})` : ""}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="0">Default Voice</option>
+                  )}
                 </select>
               </div>
               <div className="flex flex-wrap gap-2 mb-4">

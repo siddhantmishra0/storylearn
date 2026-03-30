@@ -1,6 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "type": "module",
   "description": "Backend server for content generation using Hugging Face API",
   "main": "server.js",
   "scripts": {

@@ -1,5 +1,3 @@
-"use client"
-
 import { Link } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 import { BookOpen, Brain, Sparkles } from "lucide-react"

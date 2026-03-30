@@ -1,7 +1,8 @@
-const express = require("express");
-const cors = require("cors");
-const axios = require("axios");
-require("dotenv").config();
+import express from "express";
+import cors from "cors";
+import axios from "axios";
+import dotenv from "dotenv";
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -10,10 +11,10 @@ const PORT = process.env.PORT || 5001;
 app.use(cors());
 app.use(express.json());
 
-// Hugging Face API configuration
-const HUGGINGFACE_API_KEY = process.env.HUGGING_FACE_API_KEY;
-const HUGGING_FACE_API_URL =
-  "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2";
+// Google Gemini API configuration
+const GOOGLE_GEMINI_API_KEY = process.env.GOOGLE_GEMINI_API_KEY;
+const GOOGLE_GEMINI_API_URL =
+  "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent";
 
 app.post("/test/generate-content", async (req, res) => {
   const { topic, ageRange, contentType } = req.body;
@@ -25,21 +26,19 @@ app.post("/test/generate-content", async (req, res) => {
     });
     return res.status(400).json({ error: "Missing required fields" });
   }
-  generatedContent = `Once upon a time in a magical land called Computerville, there lived a tiny superhero named Micro. Micro was not your ordinary superhero; he was a mighty microprocessor! He resided inside a magnificent machine called a computer, which sat proudly on the desk of a wise sorcerer named Professor Wiz.
 
-Now, Micro had an extraordinary power. He could perform countless calculations at lightning speed, faster than even the quickest fairies could blink! And he loved to use his powers to help solve problems and make life easier for everyone in Computerville.
+  const generatedContent = `Once upon a time in a world full of wonder and magic, there lived many interesting characters. Our story is about ${topic}, a subject that has fascinated people for countless generations. 
 
-One sunny day, Micro received an urgent message from the mayor of Computerville, who was frantically waving a sheet of paper. "Micro," he cried, "our beloved town is losing its color! Our pictures are fading, and our music is becoming muffled. We need you to restore the magic!"
+In the beginning, our hero found themselves in an extraordinary situation involving ${topic}. The adventure began when they discovered something truly remarkable. As they explored deeper, they encountered challenges that tested their knowledge and courage. Each obstacle taught them something new and valuable about ${topic}.
 
-Micro sprang into action, eager to save Computerville. He traveled through the busiest arteries of the computer, known as data paths, making his way towards the Graphics Palace and the Music Meadows.
+Throughout their journey, they met allies who helped them understand the true nature and importance of ${topic}. Together, they overcame difficulties and learned about the hidden aspects of this fascinating topic. The landscape changed around them as they traveled, filled with beautiful descriptions and exciting encounters.
 
-At the Graphics Palace, Micro discovered that the colors were disappearing because the images were not being drawn correctly. He found out that this was due to a problem with the instructions the Central Processing Unit (CPU) was sending. So, Micro worked tirelessly to rewrite these instructions, ensuring they were clear and concise. Once this was done, the CPU happily followed them, drawing beautiful, vibrant pictures once more.
+Our hero discovered that ${topic} was far more complex and wonderful than they had ever imagined. They learned about the history, the connections, and the significance of ${topic} in the world. Along the way, they made important discoveries that would change their perspective forever.
 
-Next, Micro went to the Music Meadows where he heard the sad tunes of muffled melodies. Here, he found out that the problem was with the sound waves. To fix it, Micro used his incredible calculation skills to adjust the volume levels and frequencies, restoring the beautiful symphony of sounds that filled the air.
+As the sun set on their adventure, they realized they had grown as a person. They understood ${topic} in ways they never could have before. The lessons they learned would stay with them forever, shaping their future and helping them guide others.
 
-As Micro returned to Professor Wiz, the grateful residents of Computerville celebrated their hero's triumphant return. From then on, Micro continued to work tirelessly, performing calculations, solving problems, and maintaining harmony within the magical world of Computerville.
-
-So you see, dear young friends, a microprocessor may be small, but it holds great power. Just like our brave little friend, Micro, it performs countless calculations, helps solve problems, and keeps everything running smoothly. Isn't that amazing?`;
+In the end, our hero returned home with newfound knowledge and appreciation for ${topic}. They shared their stories and discoveries with everyone they met. And from that day forward, people understood and appreciated ${topic} in entirely new and meaningful ways. Their adventure became a legend that inspired others to explore and learn about the wonders of ${topic}. The end.`;
+  
   const content = {
     id: Date.now(),
     topic,
@@ -71,8 +70,8 @@ app.post("/api/generate-content", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    if (!HUGGINGFACE_API_KEY) {
-      console.error("Hugging Face API key is not configured");
+    if (!GOOGLE_GEMINI_API_KEY) {
+      console.error("Google Gemini API key is not configured");
       return res.status(500).json({ error: "API configuration error" });
     }
 
@@ -80,48 +79,69 @@ app.post("/api/generate-content", async (req, res) => {
     let prompt = "";
     switch (contentType) {
       case "educational":
-        prompt = `Create an educational story about ${topic} suitable for ${ageRange} year olds. 
-                  The story should be informative, engaging, and include key concepts about ${topic}.
-                  Don't provide any information about the author or the story.`;
+        prompt = `Create a comprehensive and detailed educational story about ${topic} suitable for ${ageRange} year olds. 
+                  The story should be informative, engaging, well-structured and include multiple key concepts and facts about ${topic}.
+                  Include sections with: introduction, main plot with detailed explanations, educational elements, interesting facts, and a meaningful conclusion.
+                  Make it 500-800 words long with depth and richness. Don't provide any information about the author or the story metadata.`;
         break;
       case "adventure":
-        prompt = `Create an adventure story about ${topic} suitable for ${ageRange} year olds. 
-                  The story should be exciting, include a journey or quest, and teach about ${topic} through the adventure.
-                  Don't provide any information about the author or the story.`;
+        prompt = `Create a long, exciting and detailed adventure story about ${topic} suitable for ${ageRange} year olds. 
+                  The story should include: an engaging introduction, a compelling journey or quest with obstacles and challenges, character development, 
+                  exciting action sequences, teaching opportunities about ${topic}, plot twists, and a satisfying conclusion.
+                  Make it 600-900 words long. Ensure it is rich in description and narrative detail. Don't provide any information about the author or the story metadata.`;
         break;
       case "interactive":
-        prompt = `Create an interactive quiz about ${topic} suitable for ${ageRange} year olds. 
-                  The quiz should include questions, choices, and opportunities for the reader to engage with the content about ${topic}.`;
+        prompt = `Create a comprehensive interactive quiz about ${topic} suitable for ${ageRange} year olds. 
+                  Include at least 8-10 detailed questions with multiple choice options (A, B, C, D).
+                  For each question, provide the correct answer and a brief explanation.
+                  Include a scoring system at the end. Make it engaging and educational with proper formatting.
+                  Structure: Introduction, Questions with answers, Final score interpretation. Don't provide any information about the author or the quiz metadata.`;
         break;
       case "explainer":
-        prompt = `Create a simple explainer about ${topic} suitable for ${ageRange} year olds. 
-                  The content should break down complex concepts about ${topic} into easy-to-understand parts.`;
+        prompt = `Create a thorough, extensive and easy-to-understand explainer about ${topic} suitable for ${ageRange} year olds. 
+                  Break down complex concepts about ${topic} into multiple easy-to-understand sections and subsections.
+                  Use simple language, relatable examples, analogies, and visual descriptions. 
+                  Include: What is ${topic}?, Key characteristics, How it works, Why it's important, Fun facts, and Real-world examples.
+                  Make it 500-750 words long and comprehensive. Don't provide any information about the author or the explainer metadata.`;
         break;
       case "dialogue":
-        prompt = `Create a dialogue-based story about ${topic} suitable for ${ageRange} year olds. 
-                  The content should use conversations between characters to explain concepts about ${topic}.`;
+        prompt = `Create a long, engaging dialogue-based story about ${topic} suitable for ${ageRange} year olds. 
+                  Feature at least 2-3 characters having detailed conversations that explain concepts about ${topic}.
+                  Include: character introductions, multiple back-and-forth conversations, questions and answers about ${topic},
+                  discoveries, lessons learned, and a meaningful ending. Make it 500-800 words long with natural, 
+                  engaging dialogue. Don't provide any information about the author or the story metadata.`;
         break;
       default:
-        prompt = `Create a story about ${topic} suitable for ${ageRange} year olds.`;
+        prompt = `Create a detailed, long and engaging story about ${topic} suitable for ${ageRange} year olds. 
+                  Make it comprehensive with rich descriptions, interesting characters, engaging plot, and educational value.
+                  Aim for 400-600 words minimum. Don't provide any information about the author or the story metadata.`;
     }
 
     console.log("Prompt:", prompt);
+    console.log("API Key configured:", !!GOOGLE_GEMINI_API_KEY);
+    console.log("Calling Gemini API endpoint");
 
-    // Call Hugging Face API
+    // Call Google Gemini API
     const response = await axios.post(
-      HUGGING_FACE_API_URL,
+      `${GOOGLE_GEMINI_API_URL}?key=${GOOGLE_GEMINI_API_KEY}`,
       {
-        inputs: prompt,
-        parameters: {
-          max_new_tokens: 1000,
+        contents: [
+          {
+            parts: [
+              {
+                text: prompt,
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          maxOutputTokens: 3000,
           temperature: 0.7,
-          top_p: 0.95,
-          repetition_penalty: 1.1,
+          topP: 0.95,
         },
       },
       {
         headers: {
-          Authorization: `Bearer ${HUGGINGFACE_API_KEY}`,
           "Content-Type": "application/json",
         },
       }
@@ -129,12 +149,8 @@ app.post("/api/generate-content", async (req, res) => {
 
     console.log("Received response from AI");
 
-    let generatedContent = response.data[0].generated_text;
-
-    // Remove the prompt from the generated content
-    if (generatedContent.includes(prompt)) {
-      generatedContent = generatedContent.replace(prompt, "").trim();
-    }
+    let generatedContent =
+      response.data.candidates[0].content.parts[0].text;
 
     const content = {
       id: Date.now(),
@@ -151,11 +167,22 @@ app.post("/api/generate-content", async (req, res) => {
       ...content,
     });
   } catch (error) {
-    console.error("Detailed error:", error);
+    console.error("Detailed error:", error.message);
+    if (error.response) {
+      console.error("Error response status:", error.response.status);
+      console.error("Error response data:", error.response.data);
+    }
+    
+    let errorDetails = error.message;
+    if (error.response?.data?.error?.message) {
+      errorDetails = error.response.data.error.message;
+    }
+    
     res.status(500).json({
       success: false,
       error: "Failed to generate content",
-      details: error.message,
+      details: errorDetails,
+      hint: "Make sure your GOOGLE_GEMINI_API_KEY is valid and has access to the Gemini models. Use /test/generate-content for testing.",
     });
   }
 });
