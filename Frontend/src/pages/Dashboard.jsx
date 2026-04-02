@@ -23,7 +23,15 @@ const generateContent = async (topic, ageRange, storyType) => {
       }
     );
 
-    const data = await response.json();
+    const text = await response.text();
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (err) {
+      console.error("Non-JSON response from backend:", text);
+      throw new Error("Server returned invalid response (not JSON)");
+    }
     console.log("Backend response:", data);
 
     if (!response.ok) {
@@ -33,6 +41,12 @@ const generateContent = async (topic, ageRange, storyType) => {
     if (!data.success) {
       throw new Error(data.error || "Failed to generate content");
     }
+
+        // ✅ VALIDATE CONTENT
+    if (!data.content || typeof data.content !== "string") {
+      throw new Error("Invalid content received from server");
+    }
+
 
     const content = {
       id: Date.now(),
@@ -68,36 +82,6 @@ export default function Dashboard() {
   const [speechSynthesis, setSpeechSynthesis] = useState(null);
   const [voices, setVoices] = useState([]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setSpeechSynthesis(window.speechSynthesis);
-      
-      // Load voices and handle the onvoiceschanged event
-      const loadVoices = () => {
-        const availableVoices = window.speechSynthesis.getVoices();
-        if (availableVoices.length > 0) {
-          setVoices(availableVoices);
-          // Set default voice to first available
-          if (voiceType >= availableVoices.length) {
-            setVoiceType(0);
-          }
-        }
-      };
-      
-      // Load voices immediately
-      loadVoices();
-      
-      // Also listen for voices change event (some browsers load voices asynchronously)
-      window.speechSynthesis.onvoiceschanged = loadVoices;
-      
-      return () => {
-        if (window.speechSynthesis) {
-          window.speechSynthesis.onvoiceschanged = null;
-        }
-      };
-    }
-  }, []);
-
   const [topic, setTopic] = useState("");
   const [ageRange, setAgeRange] = useState("6-8");
   const [storyType, setStoryType] = useState("educational");
@@ -106,9 +90,36 @@ export default function Dashboard() {
   const [generatedContent, setGeneratedContent] = useState(null);
   const [voiceType, setVoiceType] = useState(0);
 
-  // useEffect(() => {
-  //   handleTextToSpeech();
-  // }, [voiceType]);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const synth = window.speechSynthesis;
+      setSpeechEngine(synth);
+
+      const loadVoices = () => {
+        const v = synth.getVoices();
+        if (v.length > 0) {
+          setVoices(v);
+          if (voiceType >= v.length) setVoiceType(0);
+        }
+      };
+      
+      // Load voices immediately
+      loadVoices();
+      synth.onvoiceschanged = loadVoices;
+
+      return () => {
+        synth.onvoiceschanged = null;
+      };
+    }
+  }, []);
+
+    useEffect(() => {
+    if (speechEngine) {
+      speechEngine.cancel();
+      setIsSpeaking(false);
+    }
+  }, [generatedContent]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -123,10 +134,8 @@ export default function Dashboard() {
       const content = await generateContent(topic, ageRange, storyType);
       setGeneratedContent(content);
     } catch (err) {
-      setError("Failed to generate content. Please try again.");
-      console.error(err);
+      setError(err.message);
     }
-
     setLoading(false);
   };
 
@@ -142,41 +151,42 @@ export default function Dashboard() {
   const handleTextToSpeech = () => {
     if (!speechSynthesis || !generatedContent) return;
 
+    const text = generatedContent.content;
+
+    // ✅ GUARD
+    if (!text || typeof text !== "string") {
+      console.error("Invalid text for speech:", text);
+      return;
+    }
+
     if (isSpeaking) {
       speechSynthesis.cancel();
       setIsSpeaking(false);
-    } else {
-      const utterance = new SpeechSynthesisUtterance(generatedContent.content);
+    } 
+       const utterance = new SpeechSynthesisUtterance(text);
 
-      // Use the selected voice safely
-      if (voices.length > 0 && voiceType < voices.length) {
-        utterance.voice = voices[voiceType];
-        console.log(`Using voice: ${voices[voiceType].name}`);
-      } else if (voices.length > 0) {
-        // Fallback to first voice if selected index is out of range
-        utterance.voice = voices[0];
-        console.warn(`Voice index ${voiceType} out of range. Using default voice: ${voices[0].name}`);
-      } else {
-        console.warn("No voices available. Using browser default.");
-      }
+    // ✅ VOICE SAFETY
+    if (voices.length > 0) {
+      utterance.voice = voices[voiceType] || voices[0];
+    }
 
-      // Set pitch and rate for storytelling tone
-      utterance.pitch = 1.0; // Normal pitch
-      utterance.rate = 0.9; // Slightly slower rate for clear narration
+    utterance.pitch = 1.0;
+    utterance.rate = 0.9;
 
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = (event) => {
-        console.error("Speech synthesis error:", event);
-        setIsSpeaking(false);
-      };
+    utterance.onend = () => setIsSpeaking(false);
 
-      try {
-        speechSynthesis.speak(utterance);
-        setIsSpeaking(true);
-      } catch (error) {
-        console.error("Error starting speech synthesis:", error);
-        setIsSpeaking(false);
-      }
+    utterance.onerror = (event) => {
+      console.error("Speech synthesis error:", event.error);
+      setIsSpeaking(false);
+    };
+
+    try {
+      speechEngine.cancel(); // prevent overlap
+      speechEngine.speak(utterance);
+      setIsSpeaking(true);
+    } catch (err) {
+      console.error("Speech start error:", err);
+      setIsSpeaking(false);
     }
   };
 
