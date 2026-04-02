@@ -9,7 +9,7 @@ const generateContent = async (topic, ageRange, storyType) => {
     console.log("Sending request to backend:", { topic, ageRange, storyType });
 
     const response = await fetch(
-      "http://localhost:5001/api/generate-content",
+      `${import.meta.env.VITE_BACKEND_URL}/api/generate-content`,
       {
         method: "POST",
         headers: {
