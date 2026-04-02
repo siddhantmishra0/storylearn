@@ -76,19 +76,20 @@ const generateContent = async (topic, ageRange, storyType) => {
 };
 
 export default function Dashboard() {
-  const { currentUser } = useAuth();
+   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [speechSynthesis, setSpeechSynthesis] = useState(null);
+
+  const [speechEngine, setSpeechEngine] = useState(null);
   const [voices, setVoices] = useState([]);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const [topic, setTopic] = useState("");
   const [ageRange, setAgeRange] = useState("6-8");
   const [storyType, setStoryType] = useState("educational");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState(null);
   const [voiceType, setVoiceType] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
